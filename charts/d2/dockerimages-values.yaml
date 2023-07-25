@@ -1,0 +1,496 @@
+repository : &docker_repo registry.opentext.com
+image: &graylog_image registry.opentext.com/graylog-sidecar:v1.8
+appserverImageTag: &appserverImageTag '23.2'
+appserverImageName: &appserverImageName dctm-tomcat                                                                         
+pullPolicyType: &pull_policy_type IfNotPresent
+pullSecretName: &pull_secret_name
+
+dctm-server:
+    db:
+      images:
+        repository: *docker_repo
+        db :
+          name : cs/pg
+          tag : 15.1
+        pullPolicy : *pull_policy_type
+        pullSecrets: *pull_secret_name
+    docbroker:
+      images:
+        repository: *docker_repo
+        contentserver :
+          name : dctm-server
+          tag : 23.2
+        pullPolicy : *pull_policy_type
+        pullSecrets: *pull_secret_name
+      graylog:
+        image: *graylog_image
+    content-server:
+      images:
+        repository: *docker_repo
+        contentserver :
+          name : dctm-server
+          tag : 23.2
+        pullPolicy : *pull_policy_type        
+        pullSecrets: *pull_secret_name
+      graylog:
+        image: *graylog_image
+        imagePullPolicy: *pull_policy_type        
+      custom:
+        versions: 
+        ### Provide the marker file names of client products in any order separated by comma. Before CS copying the custom scripts, these marker files presence are verified. 
+        markerFiles:
+      fluentd_service:
+        # Name and tag of should not be changed as they specify fluentd image details
+        image: registry.opentext.com/fluentd-4.4.2-1:23.2
+        imagePullPolicy: *pull_policy_type
+        restartPolicy: Always
+            
+      extraInitContainers: 
+      - name: d2installerinit
+        image: registry.opentext.com/dctm-d2pp-installer-ol:23.2
+        imagePullPolicy: *pull_policy_type
+        command: ['/bin/sh', '-c', 'yes |sudo cp -rf /customscripts/* /opt/dctm_docker/customscriptpvc/']
+        volumeMounts:
+        - name: dcs-data-pvc
+          mountPath: /opt/dctm_docker/customscriptpvc
+          subPath: initcontainercustomscripts/dcs-pg
+      # JM COMMENTED
+      #- name: "peinstaller-init"
+      #  image: "registry.opentext.com/dctm-xcp-installer:23.2"
+      #  imagePullPolicy: *pull_policy_type
+      #  command: ['/bin/sh', '-c', 'yes |sudo cp -Rf /pescripts/* /opt/dctm_docker/customscriptpvc/']
+      #  volumeMounts:
+      #  - name: dcs-data-pvc
+      #    mountPath: /opt/dctm_docker/customscriptpvc
+      #    subPath: initcontainercustomscripts/dcs-pg
+      - name: cc-dar-installer
+        image: registry.opentext.com/dctm-content-connect:23.2
+        imagePullPolicy: *pull_policy_type
+        volumeMounts:
+        - name: dcs-data-pvc
+          mountPath: /opt/dctm_docker/customscriptpvc 
+          subPath: initcontainercustomscripts/dcs-pg
+      ####Uncomment the dctm-recordsdarinstallation init contatiner when records component is enabled####
+      # - name: dctm-records-darinstallation
+        # image: registry.opentext.com/dctm-records-darinstallation:22.4
+        # imagePullPolicy: Always
+        # volumeMounts:
+        # - name: dcs-data-pvc
+          # mountPath: /opt/dctm_docker/customscriptpvc 
+          # subPath: initcontainercustomscripts/dcs-pg
+      ####Uncomment the below two dctm-reports init containers to enable/use dctm-reports ####
+      # - name: dctm-reports-d2
+        # image: registry.opentext.com/dctm-reports-d2:22.4
+        # imagePullPolicy: *pull_policy_type
+        # command: ['/bin/sh', '-c', 'yes |sudo cp -rf /opt/D2-install/custom/dtr_dar/* /opt/dctm_docker/customscriptpvc/d2']
+        # volumeMounts:
+        # - name: dcs-data-pvc
+          # mountPath: /opt/dctm_docker/customscriptpvc
+          # subPath: initcontainercustomscripts/dcs-pg
+      # - name: dctm-reports-installer
+        # image: registry.opentext.com/dctm-reports-installer:22.4
+        # imagePullPolicy: *pull_policy_type
+        # command: ['/bin/sh', '-c', 'yes |sudo cp -rf /opt/dtr_build/* /opt/dctm_docker/customscriptpvc/']
+        # volumeMounts:
+        # - name: dcs-data-pvc
+          # mountPath: /opt/dctm_docker/customscriptpvc 
+          # subPath: initcontainercustomscripts/dcs-pg
+      ####Uncomment the below dcc-dar-installer init container when dcc is enabled####
+      # - name: dcc-dar-installer
+       # image: registry.opentext.com/dctm-dcc-darinitcontainer:22.4
+       # imagePullPolicy: Always
+       # command: ['/bin/sh', '-c', 'yes |sudo cp -rf /opt/customscripts/* /opt/dctm_docker/customscriptpvc/']
+       # volumeMounts:
+       # - name: dcs-data-pvc
+         # mountPath: /opt/dctm_docker/customscriptpvc 
+         # subPath: initcontainercustomscripts/dcs-pg
+
+      #JM ADDED
+      - name: d2customdarinit
+        image: d2customdar:latest
+        imagePullPolicy: *pull_policy_type
+        command: ['/bin/sh', '-c', 'yes | cp -rf /opt/D2-install/custom/* /opt/dctm_docker/customscriptpvc/d2']
+        volumeMounts:
+        - name: dcs-data-pvc
+          mountPath: /opt/dctm_docker/customscriptpvc
+          subPath: initcontainercustomscripts/dcs-pg
+
+    dctm-rest:
+        image: *docker_repo
+        path: *appserverImageName
+        imageTag: *appserverImageTag
+        imagePullPolicy: *pull_policy_type
+        imagePullSecrets: *pull_secret_name
+        restInitContainers:
+          name: rest-init-container
+          image: registry.opentext.com/dctm-rest
+          imageTag: 23.2
+          imagePullPolicy: *pull_policy_type               
+        graylog:
+          image: *graylog_image
+          imagePullPolicy: *pull_policy_type
+        fluentd_service:
+          # Name and tag of should not be changed as they specify fluentd image details
+          image: registry.opentext.com/fluentd-4.4.2-1:23.2
+          imagePullPolicy: *pull_policy_type
+          restartPolicy: Always
+        extraInitContainers:
+          name: rest-custom
+          image:
+          imageTag:
+          imagePullPolicy: Always
+          volumeMounts:
+            # should not be modified by ct
+            name: custom-script-pvc
+            # this should be created in init container docker file and init container startup script should copy the customization files from init container image to this mount path.
+            mountPath: /opt/customscriptpvc
+            # should not be modified by ct
+            subPath: initcontainercustomscripts/dctm-rest-custom
+
+    dtrbase:
+        images:
+          dtrbase:
+            repository: *docker_repo
+            name: dctm-reports-base
+            tag: 22.4
+            pullPolicy: *pull_policy_type
+          graylog:
+            image: *graylog_image
+            pullPolicy: *pull_policy_type       
+          
+    dctm-workflow-designer:
+        #Init Docker image
+        initImage:
+            repository: *docker_repo
+            name: dctm-xcp-apphost
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+            pullSecrets: *pull_secret_name
+        #Docker image
+        image:
+            repository: *docker_repo
+            name: dctm-workflow-designer
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+            pullSecrets: *pull_secret_name
+    contentconnect:
+        images:
+          pullSecrets: *pull_secret_name
+          cc:
+            repository: *docker_repo
+            name: dctm-content-connect
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+          ccdb:
+            repository: *docker_repo
+            name: dctm-content-connect-dbinit
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+            
+    da:
+      images:
+        da:
+          repository: *docker_repo
+          name: dctm-admin
+          tag: 23.2
+          pullPolicy: *pull_policy_type
+          imagePullSecrets: *pull_secret_name
+        graylog: 
+          image: *graylog_image
+          pullPolicy: *pull_policy_type
+          name: graylog-sidecar
+          
+    dfs:
+      containers:
+        initcontainer:
+          name: dfsinit
+          image:
+            repository: *docker_repo
+            path: dctm-dfs
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+        dfs:
+          image:
+            repository: *docker_repo
+            path: *appserverImageName
+            tag: *appserverImageTag
+            pullPolicy: *pull_policy_type
+            imagePullSecrets: *pull_secret_name
+        graylog:
+          image: *graylog_image
+          imagePullPolicy: *pull_policy_type
+        fluentdConf:
+          image: registry.opentext.com/fluentd-4.4.2-1:23.2
+          pullPolicy: *pull_policy_type
+          restartPolicy: Always    
+    records:
+        images:
+          records:
+            repository: *docker_repo  
+            name: dctm-records
+            tag: 23.2
+            pullPolicy: *pull_policy_type
+          graylog: 
+            image: *graylog_image
+    
+    rqm:
+        images:
+          repository : *docker_repo  
+          rqm :
+            name : dctm-rqm
+            tag : 23.2
+            pullPolicy : *pull_policy_type
+            pullSecrets: *pull_secret_name
+          graylog:
+            image: *graylog_image
+            
+    zookeeper-statefulset:            
+      tag: "23.2"
+      image: registry.opentext.com/kafka-2.13-3.4.0
+      imagePullPolicy: *pull_policy_type
+      imagePullSecrets: *pull_secret_name
+              
+    kafka-statefulset:  
+      tag: "23.2"
+      image: registry.opentext.com/kafka-2.13-3.4.0
+      imagePullPolicy: *pull_policy_type  
+      imagePullSecrets: *pull_secret_name
+    
+    dctm-dcc:
+      consul:
+        image:
+          path: registry.opentext.com/dctm-dcc-consul
+          tag: 22.4
+          pullPolicy: *pull_policy_type
+      metadata:
+        image:
+          path: registry.opentext.com/dctm-dcc-metadataservice
+          tag: 22.4
+          pullPolicy: *pull_policy_type
+      syncagent:    
+        image:
+          path: registry.opentext.com/dctm-dcc-syncagent
+          tag: 22.4
+          pullPolicy: *pull_policy_type   
+      syncnshareManual: 
+        image:
+          path: registry.opentext.com/dctm-dcc-syncnshare-manual
+          tag: 22.4
+          pullPolicy: *pull_policy_type   
+      coreNotification: 
+        image:
+          path: registry.opentext.com/dctm-dcc-corenotificationservice
+          tag: 22.4
+          pullPolicy: *pull_policy_type
+      mailService:
+        image:   
+          path: registry.opentext.com/dctm-dcc-mailservice
+          tag: 22.4
+          pullPolicy: *pull_policy_type 
+      database:
+        dbSchemaInit:
+          image:
+            pullPolicy: *pull_policy_type
+            path: registry.opentext.com/dctm-dcc-dbschema
+            tag: 22.4         
+      graylog:
+        image: 
+          path: registry.opentext.com/graylog-sidecar@sha256
+          tag: d8ed2bf68399e34bafc68f883d8f4fb14feb9575e78d63722e544c1529f37db9
+          pullPolicy: *pull_policy_type           
+         
+
+otds:
+  otdsws:
+    image:
+      source: *docker_repo
+      name: otds-server
+      tag: 23.1.1
+      pullPolicy: *pull_policy_type
+      pullSecret: *pull_secret_name
+
+d2config:
+  images:
+    repository: *docker_repo
+    name : *appserverImageName
+    tag : *appserverImageTag
+    pullPolicy: *pull_policy_type
+    pullSecrets: *pull_secret_name
+  extraInitContainers: 
+  - name: d2configextension
+    image: registry.opentext.com/dctm-d2pp-config-ol:23.2
+    imagePullPolicy: *pull_policy_type
+    command: ['/bin/sh', '-c', '. /opt/d2config/initstartup.sh']
+    volumeMounts:
+      - name: extensionpvc
+        mountPath: /opt/d2extension
+        subPath: d2config 
+  ####Uncomment the below dctm-reports-d2 init container to enable/use dctm-reports ####
+  # - name: dctm-reports-d2
+    # image: registry.opentext.com/dctm-reports-d2:22.4
+    # imagePullPolicy: *pull_policy_type
+    # command: ['/bin/sh', '-c', 'yes |cp -rf /opt/D2-install/custom/dtr_config/* /customdir/']
+    # volumeMounts:
+    # - name: customconfig
+      # mountPath: /customdir
+  #JM ADDED
+  - name: init
+    image: d2customdar:latest
+    imagePullPolicy: *pull_policy_type
+    command: ['/bin/sh', '-c', 'yes | cp -rf /opt/D2-install/custom/* /customdir/']
+    volumeMounts:
+      - name: customconfig
+        mountPath: /customdir
+d2classic:
+  images:
+    repository: *docker_repo
+    name : *appserverImageName
+    tag : *appserverImageTag
+    pullPolicy: *pull_policy_type
+    pullSecrets: *pull_secret_name
+  extraInitContainers: 
+  - name: d2classicextension
+    image: registry.opentext.com/dctm-d2pp-classic-ol:23.2
+    imagePullPolicy: *pull_policy_type
+    command: ['/bin/sh', '-c', '. /opt/d2classic/initstartup.sh']
+    volumeMounts:
+      - name: extensionpvc
+        mountPath: /opt/d2extension
+        subPath: d2classic
+  ####Uncmment the below dctm-reports init container to enable/use dctm-reports ####
+  # - name: dctm-reports-d2
+    # image: registry.opentext.com/dctm-reports-d2:22.4
+    # imagePullPolicy: *pull_policy_type
+    # command: ['/bin/sh', '-c', 'yes |cp -rf /opt/D2-install/custom/dtr_build/* /customdir/']
+    # volumeMounts:
+    # - name: d2report
+      # mountPath: /customdir
+
+d2smartview:
+  images:
+    repository: *docker_repo
+    name : *appserverImageName
+    tag : *appserverImageTag
+    pullPolicy: *pull_policy_type
+    pullSecrets: *pull_secret_name
+  extraInitContainers: 
+  - name: d2smartviewextension
+    image: registry.opentext.com/dctm-d2pp-smartview-ol:23.2
+    imagePullPolicy: *pull_policy_type
+    command: ['/bin/sh', '-c', '. /opt/d2smartview/initstartup.sh']
+    volumeMounts:
+      - name: extensionpvc
+        mountPath: /opt/d2extension
+        subPath: d2smartview
+d2rest:
+  images:
+    repository: *docker_repo
+    name : *appserverImageName
+    tag : *appserverImageTag
+    pullPolicy: *pull_policy_type
+    pullSecrets: *pull_secret_name
+  extraInitContainers: 
+  - name: d2restextension
+    image: registry.opentext.com/dctm-d2pp-rest-ol:23.2
+    imagePullPolicy: *pull_policy_type
+    command: ['/bin/sh', '-c', '. /opt/d2rest/initstartup.sh']
+    volumeMounts:
+      - name: extensionpvc
+        mountPath: /opt/d2extension
+        subPath: d2rest
+        
+appworks-gateway:
+  image:
+    registry: registry.opentext.com
+    repository: otawg
+    tag: 23.1.0
+    pgInitContainer:
+      registry: registry.opentext.com
+      repository: otawg-pg-init
+      tag: 23.1.0
+    awgInitContainer:
+      registry: registry.opentext.com
+      repository: otawg-init
+      tag: 23.1.0
+    appsInitContainer:
+      registry: *docker_repo
+      repository: dctm-d2-mobile-init-container
+      tag: 23.2
+    pullPolicy: *pull_policy_type
+ #  Optional-specify the name of secret created to pull private images
+ #  imagePullSecrets: [ "name" : "" ]
+ 
+xplore:
+  image:
+    repository: *docker_repo
+    pullPolicy: *pull_policy_type
+    indexserver:
+      name: dctm-xplore-indexserver
+      tag: 22.1.2
+    indexagent:
+      name: dctm-xplore-indexagent
+      tag: 22.1.2
+    cps:
+      name: dctm-xplore-cps
+      tag: 22.1.2
+  graylog:
+    image: *graylog_image
+
+otiv:
+    global:
+      imageBaseTag: 23.2
+      imageSource: registry.opentext.com/otiv
+      ## the default pull policy for images; can be overridden by per service by setting <service>.image.pullPolicy
+      imagePullPolicy: *pull_policy_type
+
+      ## name of the secret needed to pull from docker registry
+      imagePullSecret: *pull_secret_name
+      
+      otdsInit:
+        image:
+          name: otiv-init-otds
+          tag: 23.2
+    amqp:
+      image:
+        name: otiv-amqp
+        tag: 23.2
+    viewer:
+      image:
+        name: otiv-viewer
+        tag: 23.2
+
+    markup:
+      image:
+        name: otiv-markup
+        tag: 23.2
+
+    config:
+      image:
+        name: otiv-config
+        tag: 23.2
+
+    highlight:
+      image:
+        name: otiv-highlight
+        tag: 23.2
+
+    metis:
+      image:
+        name: otiv-metis
+        tag: 23.2
+
+    publication:
+      image:
+        name: otiv-publication
+        tag: 23.2
+
+    publisher:
+      image:
+        name: otiv-publisher
+        tag: 23.2
+
+    asset:
+      image:
+        name: otiv-asset
+        tag: 23.2
+

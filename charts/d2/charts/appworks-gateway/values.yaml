@@ -1,0 +1,175 @@
+# Default values for appworks-gateway.
+
+image:
+  registry: repository.opentext.net
+  repository: otawg
+  tag: 22.3.0
+  pgInitContainer: # Comment pgInitContainer section if the database is MsSqlServer/Oracle
+    registry: repository.opentext.net
+    repository: otawg-pg-init
+    tag: 22.3.0
+  awgInitContainer:
+    registry: repository.opentext.net
+    repository: otawg-init
+    tag: 22.3.0
+#  appsInitContainer:
+#    registry: repository.opentext.net
+#    repository: apps-init
+#    tag: 22.1.1
+  pullPolicy: IfNotPresent
+#  Optional-specify the name of secret created to pull private images
+#  imagePullSecrets: [ "name" : "" ]
+
+database:
+  vendor: PostgreSql # Valid values PostgreSql/Oracle/MsSqlServer
+  server:
+    host: postgres-service
+    port: 5432
+  admin: # Required only for PostgreSql
+    user: postgresadminuser # Required only for PostgreSql
+    password:        	 # Required only for PostgreSql (Postgres Admin password)
+    database: postgresadmindatabase # Required only for PostgreSql
+  appworksdb:
+    user: postgresuser # user will be created by pg init container only for PostgreSql if it does not exist
+    password: 	
+    # database will be created by pg init container only for PostgreSql if it does not exist
+    # database is not required for Oracle instead will use service
+    database: postgresdatabase    
+    service: oracleSIDname # provide service/SID for oracle database instead of database name    
+    # useSSL and trustDbCerts will be used incase if you are trying to connect with Amazon RDS.
+    # If both the values are true, then Appworks Gateway will take care of downloading the certificates from the AWS.
+    # If useSSL is true and trustDbCerts is false , then Administrator needs to placed that certificate inside the helm i.e. appworks-gateway\trustCertificates folder.
+  useSSL: false  
+  trustDbCerts : false
+
+otds:
+  server:
+    url: "http://otds-service:8080"
+  admin:
+    user: otdsadminusername
+    password: 		
+  partition:
+    new: gatewaypartition
+  resource:
+    new: gatewayresource
+
+awg:
+  admin:
+    newadminuser: gatewayadminusername
+    newadminpassword: 		
+  externalurl: "http://ingress" # must not be localhost or 127.0.0.1
+  logging:
+    level: info # one of ["trace", "debug", "info", "warn", or "error"]
+
+  # The settings in this file enable you to deploy AppWorks Gateway in a containerized environment.
+  # Refer to the AppWorks Gateway Installation and Administration Guide for details on updating the settings for your requirements.
+  # All settings here are optional - default values are provided below
+  # If not specified here, you can use the Appworks Gateway Admin UI to update them
+  # If specified here, you cannot use the Appworks Gateway Admin UI to update them
+  settings:
+    wantSecureCookies: true
+    doNotProxyOTDS: false
+#   cookieDomainForGeneratedOTDSCookies: ""
+    anonymousAccessEnabled: false
+    forcePasswordBasedNonOauthAuthentication: false
+    disableOTDSAuth: false
+#   otdsSSODisableByIP: ""
+#   listOfTenants: ""
+    awgDeveloperMode: false
+    mdm:
+      clientTrackingEnabled: true
+      remoteWipeTimeoutSeconds: "300"
+#     remoteWipeFailureEmailRecipients: ""
+      permitStorageOfPasswordsOnDevice: false
+      passwordOnDeviceExpirySeconds: 604800
+      permitOfflineAccessOnDevice: false
+      notifyDevicesOfOfflinePolicyChange: false
+    mail:
+      smtpReturnAddress: noreply@example.com
+      smtpHost: some-host
+      smtpPort: 25
+#     smtpUsername: ""
+#     smtpPassword: ""
+      smtpUseSSL: false # not required to be true in most SSL settings
+    enableAutoLogout: false # if enabled then only autoLogoutTimeInterval will be respected
+    autoLogoutTimeIntervalSeconds: 900 # Minimum value acceptable is 120 Seconds
+    enableConcurrentSessionLimit: false # if enabled then only concurrentSessionLimitAdmin and concurrentSessionLimitUser will be respected
+    concurrentSessionLimitAdmin: 3 # Value cannot be 0
+    concurrentSessionLimitUser: 2 # Value cannot be 0
+    pushToConsole: false # if enabled then only audit information will be pushed to console
+
+replicaCount: 1
+
+# Proxy Configuration
+proxy:
+  automate: false
+  fileName: Rulestemplate.json
+
+# Flag to decide whether the secrets need to be deployed from helm chart or not.
+# In case of using an external secret manager we should not deploy our secret.
+deploySecretsFromHelm: true
+
+# Flag to change FIPS mode
+fipsModeEnabled: false
+
+# provide valid timezone e.g Asia/Kolkata
+timezone: UTC
+
+# readiness probe
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 60
+
+# liveness probe
+livenessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 60
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+    nginx.ingress.kubernetes.io/client-max-body-size: 10m
+    # nginx.org/client-max-body-size: "50m"
+    # kubernetes.io/ingress.allow-http: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: 
+    enabled: false
+    info:
+      - secretName:
+          name: otawg-tls-secret
+          create: false
+          key: #provide the .crt file value
+          cert: #provide the .key file value
+        hosts:
+          - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,20 @@
+#---------------------------------------
+#Service
+#---------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  labels:
+    app: {{ .Values.serviceName }}
+spec:
+   type: ClusterIP
+   ports:
+   - port: {{ .Values.zookeeper.ports.clientPort }}
+     name: zkprclntport
+   - port: {{ .Values.zookeeper.ports.serverPort }}
+     name: zkprsvrport
+   - port: {{ .Values.zookeeper.ports.electionPort }}
+     name: zkprelecnport 
+   selector:
+     app: {{ .Values.serviceName }}

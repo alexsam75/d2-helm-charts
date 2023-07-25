@@ -1,0 +1,73 @@
+# Default values for zookeeper.services.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+serviceName: <sname>-kfk
+
+serviceAccountName: 
+
+secret:
+  name: <sname>-kafka-secrets
+  
+configMaps:
+  kafka_broker_configMap: <sname>-kafka-config
+
+imagePullPolicy: Always
+
+tag: "23.2"
+image: artifactory.otxlab.net/bpdockerhub/oraclelinux/kafka-2.13-3.2.3
+
+restartPolicy: Always
+replicas: 3
+
+zookeeper:
+  name: <sname>-zkpr
+  domain: qe-docu.svc.cluster.local #<namespace>.<env_domain>
+  port: 2181 #<zookeeper port>
+  replica: 3
+
+kafkabroker:
+  ports:
+    kafkabrkrport: 9092
+  livenessprobe:
+    enable: true
+    initialdelayseconds: 100
+    periodseconds: 30
+    failurethreshold: 3
+  extraEnv:
+  topic:
+    create: true
+    topicname: Cs-Audit-Topic
+    partitions: 3
+  consumer:
+    username: "kafka-consumer"
+    password: "kafka-consumer" 
+  persistentVolume:
+    createPVC: true
+    servicedataPVCName: <sname>-kfk-data-pvc
+    namespace: qe-docu
+    pvcAccessModes: ReadWriteMany
+    size: 1Gi
+    storageClass: trident-nfs
+  ExtAccess:
+    enable: false
+    #The externalNodeIp is the external ip of any of the k8's nodes which can be obtained using kubectl get nodes -o wide
+    externalNodeIp: "10.0.0.0"
+    #Specified port should not be present in the output of the below command
+    #kubectl get svc --all-namespaces -o go-template='{{range .items}}{{range.spec.ports}}{{if .nodePort}}{{.nodePort}}{{"\n"}}{{end}}{{end}}{{end}}'
+    externalPort: 
+  
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 100m
+    memory: 400Mi
+
+### Volume Claim Template  ###  
+volumeClaimTemplate:
+  vctname: <sname>-kfk-vct-data
+  pvcAccessModes: ReadWriteOnce
+  size: 1Gi
+  storageClass: trident-nfs

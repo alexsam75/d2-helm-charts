@@ -1,0 +1,22 @@
+{{- if eq .Values.kafkabroker.ExtAccess.enable true }}
+{{range $i, $e := until (int .Values.replicas) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.serviceName }}-ext-{{ $i }}
+  labels:
+    app: {{ $.Values.serviceName }}-ext-{{ $i }}
+spec:
+  sessionAffinity: ClientIP
+  type: NodePort
+  ports:
+  - port: {{ add $.Values.kafkabroker.ExtAccess.externalPort $i }}
+    nodePort: {{ add $.Values.kafkabroker.ExtAccess.externalPort $i }}
+    protocol: TCP
+    name: kafkaextport-{{ $i }}
+    targetPort: {{ add $.Values.kafkabroker.ExtAccess.externalPort $i }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $.Values.serviceName }}-{{ $i }}
+{{ end }}
+{{- end }}

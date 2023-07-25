@@ -1,0 +1,21 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+serviceName: <sname>-kafka-configmap
+
+configMap:
+  zookeeper_configMap_name: <sname>-zkpr-config
+  kafka_broker_configMap_name: <sname>-kafka-config
+  
+zookeeper:
+   logging_level: #<default = INFO valid values are DEBUG, INFO> 
+
+
+kafkabroker:
+   logging_level: #<default = INFO => valid values are DEBUG, INFO>
+   auto_topic_create: #<default = false => valid values are true, false>
+   num_partitions: #<default = 2 => valid value can be of any positive number >
+   log_retention_hours: #<default = 168 in hours >
+   log_roll_hours: #<default = 168 in hours => best is (log_retention_hours-1) >
+   #cluster, application level, performance related parameters which are Mandatory.
+   background_threads: #<default = 10>

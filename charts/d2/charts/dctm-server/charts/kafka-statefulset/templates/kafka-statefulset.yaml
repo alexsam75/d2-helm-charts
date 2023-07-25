@@ -1,0 +1,141 @@
+#---------------------------------------
+#StatefulSet
+#---------------------------------------
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: {{ .Values.serviceName }} 
+spec:
+  replicas: {{ .Values.replicas }}
+  serviceName: {{ .Values.serviceName }}
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.serviceName }}
+    spec:
+{{- if .Values.secret.name }}
+      imagePullSecrets:
+        - name: {{ .Values.secret.name }}
+{{ end }}
+      serviceAccountName : {{ .Values.serviceAccountName }}
+      containers:
+      - name: {{ .Values.serviceName }}
+        image: {{ .Values.image }}:{{ .Values.tag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+{{ if .Values.kafkabroker.livenessprobe.enable }}
+        livenessProbe:
+          exec:
+            command: 
+            - /kafka-setup/stats.sh
+            - broker-alive
+          initialDelaySeconds: {{ .Values.kafkabroker.livenessprobe.initialdelayseconds }}
+          periodSeconds: {{ .Values.kafkabroker.livenessprobe.periodseconds }}
+          failureThreshold: {{ .Values.kafkabroker.livenessprobe.failurethreshold }}
+{{ end }}
+        readinessProbe:
+          exec:
+            command:
+            - /kafka-setup/stats.sh
+            - broker-ready
+          initialDelaySeconds: 100
+          periodSeconds: 40
+          failureThreshold: 3
+        env:
+        - name: DM_SERVICE_TYPE
+          value: "KAFKA"
+        - name: DM_DEPLOYMENT_TYPE
+          value: KUBERNETES
+        - name: DM_KAFKA_LOGS_DIRS
+          value: "/kafka-setup/kafkabroker/kafka_logs"
+        - name: DM_KAFKABROKER_PORT
+          value: {{ .Values.kafkabroker.ports.kafkabrkrport | quote }}
+        - name: KAFKA_zookeeper_connect
+          value: '{{ template "generatezkprlist" .Values }}'
+        - name: DM_BROKER_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secret.name }}
+              key: broker_admin_username
+        - name: DM_BROKER_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secret.name }}
+              key: broker_admin_password
+{{- if .Values.kafkabroker.jvm_opts }}
+        - name: DM_JVM_OPTS
+          value: {{ .Values.kafkabroker.jvm_opts | quote }}
+{{- end }}
+{{- if .Values.kafkabroker.topic.create }}
+        - name: DM_CREATE_TOPIC
+          value: {{ .Values.kafkabroker.topic.create | quote }}
+        - name: DM_TOPIC_NAME
+          value: {{ .Values.kafkabroker.topic.topicname | quote }}
+        - name: DM_TOPIC_PARTITION_COUNT
+          value: {{ .Values.kafkabroker.topic.partitions | quote }}
+        - name: DM_TOPIC_REPLICATION_COUNT
+          value: {{ .Values.replicas | quote }}
+{{- end }}
+        - name: DM_CONSUMER_USERNAME
+          value: {{ .Values.kafkabroker.consumer.username | quote }}
+        - name: DM_CONSUMER_PASSWORD
+          value: {{ .Values.kafkabroker.consumer.password | quote }}
+        - name: KAFKA_default_replication_factor
+          value: {{ .Values.replicas |  quote }}
+{{- if eq .Values.kafkabroker.ExtAccess.enable true }}
+        - name: DM_EXTERNAL_ACCESS_ENABLE
+          value: "true"
+        - name: DM_EXTERNAL_NODE_IP
+          value: {{ .Values.kafkabroker.ExtAccess.externalNodeIp | quote }}
+        - name: DM_EXTERNAL_NODE_PORT
+          value: {{ .Values.kafkabroker.ExtAccess.externalPort | quote }}
+{{- end }}
+
+{{- if .Values.kafkabroker.extraEnv }}
+{{ toYaml .Values.kafkabroker.extraEnv | indent 8 }}
+{{- end }}
+        volumeMounts:
+        - mountPath: /kafka-setup/kafkabroker/kafka_logs
+          name: {{ .Values.kafkabroker.persistentVolume.servicedataPVCName }}
+          subPath: logs
+        - mountPath: /kafka-setup/kafkabroker/config
+          name: kafkabroker-configmap
+        ports:
+        - containerPort: {{ .Values.kafkabroker.ports.kafkabrkrport }}
+          name: kafkabrkrport
+{{- if eq .Values.kafkabroker.ExtAccess.enable true }}
+{{- range $i, $e := until  (int .Values.replicas) }}
+        - containerPort: {{ add $.Values.kafkabroker.ExtAccess.externalPort $i }}
+          name: kafkaextport-{{ $i }}
+{{- end }}
+{{- end }}
+
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.resources.limits.cpu }}
+      volumes:
+        - name: {{ .Values.kafkabroker.persistentVolume.servicedataPVCName }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.serviceName }}-kfk-pvc
+        - name: kafkabroker-configmap
+          configMap:
+            name: {{ .Values.configMaps.kafka_broker_configMap }}
+      restartPolicy: {{ .Values.restartPolicy }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .Values.volumeClaimTemplate.vctname }}
+    spec:
+      accessModes: 
+        - {{ .Values.volumeClaimTemplate.pvcAccessModes }}
+      resources:
+        requests:
+          storage: {{ .Values.volumeClaimTemplate.size }}
+      storageClassName: {{ .Values.volumeClaimTemplate.storageClass }}

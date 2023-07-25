@@ -1,0 +1,9 @@
+# Default values for zookeeper.secreats.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+secret:
+  name: <sname>-kafka-secrets
+
+kafka_broker:
+  broker_admin_username: kafka-user
+  broker_admin_password: kafka-password

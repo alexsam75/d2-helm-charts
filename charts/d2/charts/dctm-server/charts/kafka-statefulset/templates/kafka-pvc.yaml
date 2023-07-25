@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.serviceName }}-kfk-pvc
+  namespace: {{ .Values.kafkabroker.persistentVolume.namespace }}
+spec:
+  accessModes:
+    - {{ .Values.kafkabroker.persistentVolume.pvcAccessModes }}
+  storageClassName: {{ .Values.kafkabroker.persistentVolume.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.kafkabroker.persistentVolume.size }}

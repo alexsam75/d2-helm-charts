@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMap.kafka_broker_configMap_name }}
+data:
+  kafka.properties: |
+    auto.create.topics.enable={{ .Values.kafkabroker.auto_topic_create | default false }}
+    background.threads={{ .Values.kafkabroker.background_threads | default 10}}
+    log.retention.hours={{ .Values.kafkabroker.log_retention_hours | default 168 }}
+    log.roll.hours={{ .Values.kafkabroker.log_roll_hours | default 168 }}
+    
+  log4j.properties: |
+    log4j.rootLogger={{ .Values.kafkabroker.logging_level | default "INFO" }}, stdout
+    log4j.logger.org.apache.zookeeper={{ .Values.kafkabroker.logging_level | default "INFO" }}
+    log4j.logger.kafka={{ .Values.kafkabroker.logging_level | default "INFO" }}
+    log4j.logger.org.apache.kafka={{ .Values.kafkabroker.logging_level | default "INFO" }} 
+    log4j.logger.kafka.request.logger={{ .Values.kafkabroker.logging_level | default "WARN" }}, requestAppender
+    log4j.logger.kafka.network.RequestChannel$={{ .Values.kafkabroker.logging_level | default "WARN" }}, requestAppender
+    log4j.logger.kafka.log.LogCleaner={{ .Values.kafkabroker.logging_level | default "INFO" }}, cleanerAppender
+    log4j.logger.state.change.logger={{ .Values.kafkabroker.logging_level | default "INFO" }}, stateChangeAppender
+    log4j.logger.kafka.authorizer.logger={{ .Values.kafkabroker.logging_level | default "INFO" }}, authorizerAppender

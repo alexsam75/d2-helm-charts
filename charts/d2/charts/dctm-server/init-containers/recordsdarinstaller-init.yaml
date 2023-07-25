@@ -1,0 +1,10 @@
+content-server:
+     extraInitContainers:
+     - name: dctm-records-darinstallation
+       image: artifactory.otxlab.net/bpdockerhub/dctm-records-darinstallation:23.2
+       imagePullPolicy: Always
+       imagePullSecrets:
+       volumeMounts:
+       - name: dcs-data-pvc
+         mountPath: /opt/dctm_docker/customscriptpvc 
+         subPath: initcontainercustomscripts/<sname>dcs-pg

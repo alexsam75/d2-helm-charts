@@ -1,0 +1,54 @@
+    # Default values for zookeeper.services.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+serviceName: <sname>-zkpr
+
+serviceAccountName: 
+
+configMaps:
+  zookeeper_configMap: <sname>-zkpr-config
+
+imagePullPolicy: Always
+
+tag: "23.2"
+image: artifactory.otxlab.net/bpdockerhub/oraclelinux/kafka-2.13-3.2.3
+
+restartPolicy: Always
+replicas: 3
+
+zookeeper:
+  ports:
+    clientPort: 2181
+    serverPort: 2888
+    electionPort: 3888  
+  env:
+    jvm_opts:
+  ### Persistent Volume Claim ###  
+  persistentVolume:
+    createPVC: true
+    servicedataPVCName: <sname>-zkpr-data-pvc
+    namespace: qe-docu
+    pvcAccessModes: ReadWriteMany
+    size: 1Gi
+    storageClass: trident-nfs
+  livenessprobe:
+    enable: true
+    initialdelayseconds: 100
+    periodseconds: 30
+    failurethreshold: 3
+ 
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 100m
+    memory: 400Mi
+
+### Volume Claim Template  ###  
+volumeClaimTemplate:
+  vctname: <sname>-zkpr-vct-data
+  pvcAccessModes: ReadWriteOnce
+  size: 1Gi
+  storageClass: trident-nfs

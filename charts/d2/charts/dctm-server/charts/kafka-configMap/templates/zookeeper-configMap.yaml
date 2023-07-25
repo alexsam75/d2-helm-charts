@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMap.zookeeper_configMap_name }}
+data:    
+  log4j.properties: |
+    log4j.rootLogger={{ .Values.zookeeper.logging_level | default "INFO" }}, stdout
+    log4j.logger.org.apache.zookeeper={{ .Values.zookeeper.logging_level | default "INFO" }}
+    log4j.logger.kafka={{ .Values.zookeeper.logging_level | default "INFO" }}
+    log4j.logger.org.apache.kafka={{ .Values.zookeeper.logging_level | default "INFO" }} 
+    log4j.logger.kafka.request.logger={{ .Values.zookeeper.logging_level | default "WARN" }}, requestAppender
+    log4j.logger.kafka.network.RequestChannel$={{ .Values.zookeeper.logging_level | default "WARN" }}, requestAppender
+    log4j.logger.kafka.log.LogCleaner={{ .Values.zookeeper.logging_level | default "INFO" }}, cleanerAppender
+    log4j.logger.state.change.logger={{ .Values.zookeeper.logging_level | default "INFO" }}, stateChangeAppender
+    log4j.logger.kafka.authorizer.logger={{ .Values.zookeeper.logging_level | default "INFO" }}, authorizerAppender

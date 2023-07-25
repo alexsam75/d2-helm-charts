@@ -1,0 +1,96 @@
+dctm-server:
+    db:
+      database:
+        replicaCount: 1
+      alterParam:
+        max_connections: 1000
+        shared_buffers: 2GB
+      persistentVolume:
+        size: 100Gi
+    docbroker:
+      docbroker:
+        replicaCount: 1
+      persistentVolume:
+        size: 1Gi
+    content-server:
+      contentserver:
+        replicaCount: 1
+        docbrokersCount: 1
+      persistentVolume:
+        size: 21Gi
+      dbrpersistentVolume:
+        size: 1Gi
+    dctm-rest:
+      replicaCount: 1
+    dctm-workflow-designer:
+      replicaCount: 1
+      persistentVolume:
+        size: 2Gi
+      volumeClaimTemplates:
+        size: 200Mi
+    dfs:
+      replicaCount: 1
+      volumeClaimTemplate:
+        size: 1Gi
+        # storage class for the volumeClaimTemplates Ex : azurefile
+        logVctSize: 2Gi
+    contentconnect:
+      replicaCount: 1
+      resources:
+        limits:
+          cpu: 2
+          memory: 4Gi
+      contentconnectdb:
+        replicaCount: 1
+    dtrbase:
+      persistentVolumeClaim:
+        size: 1Gi
+      deployment:
+        replicaCount: 1
+    da:
+      replicaCount: 1
+      persistentVolumeClaim:
+        size: 1Gi
+    records:
+      records:
+        replicaCount: 1
+    rqm:
+      containers:
+        rqm:
+          replicaCount: 1
+otds:
+  otdsws:
+    replicas: 1
+d2classic:
+  replicaCount: 1
+  graylog:
+    volumeClaimTemplate:
+      logVctSize: 2Gi
+  persistentVolume:
+    size: 1Gi
+d2config:
+  replicaCount: 1
+  graylog:
+    volumeClaimTemplate:
+      logVctSize: 2Gi
+  persistentVolume:
+    size: 1Gi
+d2smartview:
+  replicaCount: 1
+  graylog:
+    volumeClaimTemplate:
+      logVctSize: 2Gi
+  persistentVolume:
+    size: 1Gi
+d2rest:
+  replicaCount: 1
+  graylog:
+    volumeClaimTemplate:
+      logVctSize: 2Gi
+  persistentVolume:
+    size: 1Gi
+xplore:
+  cps:
+    replicaCount: 1
+  persistentVolume:
+    size: 29Gi

@@ -1,0 +1,110 @@
+#---------------------------------------
+#StatefulSet
+#---------------------------------------
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: {{ .Values.serviceName }} 
+spec:
+  replicas: {{ .Values.replicas }}
+  serviceName: {{ .Values.serviceName }}
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.serviceName }}
+    spec:
+      serviceAccountName : {{ .Values.serviceAccountName }}
+      containers:
+      - name: {{ .Values.serviceName }}
+        image: {{ .Values.image }}:{{ .Values.tag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+{{ if .Values.zookeeper.livenessprobe.enable }}
+        livenessProbe:
+          exec:
+            command:
+            - /kafka-setup/stats.sh
+            - zookeeper-alive
+          initialDelaySeconds: {{ .Values.zookeeper.livenessprobe.initialdelayseconds }}
+          periodSeconds: {{ .Values.zookeeper.livenessprobe.periodseconds }}
+          failureThreshold: {{ .Values.zookeeper.livenessprobe.failurethreshold }}
+{{ end }}
+        readinessProbe:
+          exec:
+            command:
+            - /kafka-setup/stats.sh
+            - zookeeper-ready
+          initialDelaySeconds: 50
+          periodSeconds: 40
+          failureThreshold: 3
+        env:
+        - name: DM_SERVICE_TYPE
+          value: "ZOOKEEPER"
+        - name: DM_DEPLOYMENT_TYPE
+          value: KUBERNETES
+        - name: DM_ZOOKEEPER_PORT
+          value: {{ .Values.zookeeper.ports.clientPort | quote }}
+        - name: ZOOKEEPER_clientPort
+          value: {{ .Values.zookeeper.ports.clientPort | quote }}
+        - name: ZOO_SERVER_PORT
+          value: {{ .Values.zookeeper.ports.serverPort | quote }}
+        - name: ZOO_ELECTION_PORT
+          value: {{ .Values.zookeeper.ports.electionPort | quote }}
+        - name: ZOO_REPLICA_COUNT
+          value: {{ .Values.replicas | quote }}
+        - name: ZOOKEEPER_dataLogDir
+          value: "/kafka-setup/zookeeper/zook_logs"
+        - name: ZOOKEEPER_dataDir
+          value: "/kafka-setup/zookeeper/zook_data"
+{{- if .Values.zookeeper.env.jvm_opts }}
+        - name: DM_JVM_OPTS
+          value: {{ .Values.zookeeper.env.jvm_opts | quote }}
+{{- end }}
+{{- if .Values.zookeeper.extraEnv }}
+{{ toYaml .Values.zookeeper.extraEnv | indent 8 }}
+{{- end }}
+        volumeMounts:
+        - mountPath: /kafka-setup/zookeeper/zook_data
+          name: {{ .Values.volumeClaimTemplate.vctname }}
+          subPath: data/{{ .Values.serviceName }}
+        - mountPath: /kafka-setup/zookeeper/zook_logs
+          name: {{ .Values.zookeeper.persistentVolume.servicedataPVCName }}
+          subPath: logs/{{ .Values.serviceName }}
+        - mountPath: /kafka-setup/zookeeper/config
+          name: zookeeper-configmap
+        ports:
+        - containerPort: {{ .Values.zookeeper.ports.clientPort }}
+          name: zkprclntport
+        - containerPort: {{ .Values.zookeeper.ports.electionPort }}
+          name: zkprelecnport
+        - containerPort: {{ .Values.zookeeper.ports.serverPort }}
+          name: zkprsvrport
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.resources.limits.cpu }}
+      volumes:
+        - name: {{ .Values.zookeeper.persistentVolume.servicedataPVCName }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.serviceName }}-data-pvc
+        - name: zookeeper-configmap
+          configMap:
+            name: {{ .Values.configMaps.zookeeper_configMap }}
+      restartPolicy: {{ .Values.restartPolicy }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .Values.volumeClaimTemplate.vctname }}
+    spec:
+      accessModes: 
+        - {{ .Values.volumeClaimTemplate.pvcAccessModes }}
+      resources:
+        requests:
+          storage: {{ .Values.volumeClaimTemplate.size }}
+      storageClassName: {{ .Values.volumeClaimTemplate.storageClass }}

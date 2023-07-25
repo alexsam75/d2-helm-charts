@@ -1,0 +1,27 @@
+{{- if eq .Values.ingress.enable true }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.name }}
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-name: route
+    nginx.ingress.kubernetes.io/session-cookie-hash: sha1
+spec:
+  rules:
+  - host: {{ .Values.ingress.hostName }}.{{ .Values.ingress.domain }}
+    http:
+      paths:
+      - path: /dsearchadmin
+        backend:
+          serviceName: {{ .Values.service.indexserver.name }}
+          servicePort: {{ .Values.service.indexserver.port }}
+      - path: /dsearch
+        backend:
+          serviceName: {{ .Values.service.indexserver.name }}
+          servicePort: {{ .Values.service.indexserver.port }}
+      - path: /IndexAgent
+        backend:
+          serviceName: {{ .Values.service.indexagent.name }}
+          servicePort: {{ .Values.service.indexagent.port }}
+{{ end }}

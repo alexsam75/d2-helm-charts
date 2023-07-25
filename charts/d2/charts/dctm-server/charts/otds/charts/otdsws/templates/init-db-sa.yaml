@@ -1,0 +1,36 @@
+{{- if .Values.otdsdb.automaticDatabaseCreation.enabled }}
+# RBAC role to be assigned to service account for the init-db
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+{{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+{{- end }}
+  name: {{ template "initdb.role" . }}
+  labels:
+    {{- include (printf "%s%s" .Chart.Name ".labels" ) . | nindent 4 }}
+  annotations:
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "configmaps", "secrets", "services", "pods/log", "pods/attach"]
+  verbs: ["list", "get", "delete", "create", "watch"]
+---
+# Binding the role with the service account for the init-db
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+{{- if .Values.global.namespace }}
+  namespace: {{ .Values.global.namespace }}
+{{- end }}
+  name: {{ template "initdb.rolebinding" . }}
+  labels:
+    {{- include (printf "%s%s" .Chart.Name ".labels" ) . | nindent 4 }}
+  annotations:
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "initdb.role" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.serviceAccountName }}
+{{- end }}

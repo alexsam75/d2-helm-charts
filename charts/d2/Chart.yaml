@@ -1,0 +1,45 @@
+apiVersion: v2
+appVersion: 23.2.0000.0158
+dependencies:
+- name: dctm-server
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: otds.enabled
+  name: otds
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: 23.1.1
+- condition: d2config.enabled
+  name: d2config
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: d2classic.enabled
+  name: d2classic
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: d2smartview.enabled
+  name: d2smartview
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: d2rest.enabled
+  name: d2rest
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: d2ingress.enabled
+  name: d2ingress
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "23.2"
+- condition: appworks-gateway.enabled
+  name: appworks-gateway
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: 23.1.0
+- condition: xplore.enabled
+  name: xplore
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: "22.1"
+- condition: otiv.enabled
+  name: otiv
+  repository: https://artifactory.otxlab.net/artifactory/BPhelm
+  version: 23.2.0
+description: A Helm chart for Kubernetes
+name: d2
+version: "23.2"

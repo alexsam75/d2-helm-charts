@@ -1,0 +1,5 @@
+apiVersion: v2
+appVersion: 23.2.0000.0158
+description: A Helm chart for Kubernetes
+name: d2ingress
+version: "23.2"

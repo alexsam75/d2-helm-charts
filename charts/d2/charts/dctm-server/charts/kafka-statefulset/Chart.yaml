@@ -1,0 +1,5 @@
+apiVersion: v2
+appVersion: "23.2"
+description: A Dcumentum Server Helm chart for Kafkabroker Service
+name: kafka-statefulset
+version: "23.2"

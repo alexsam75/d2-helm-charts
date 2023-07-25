@@ -1,0 +1,35 @@
+{{- $prefix := "otiv" }}
+{{- if .Values.global.cssFqdn -}}
+{{- $prefix = "cvt" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ include "base.resource.name" . }}-configmap
+data:
+    AUTH_TOKEN_URL: {{ template "otds.api.url" .}}/oauth2/token
+    {{ template "cors.config" . }}
+    {{ template "forwarded.config" . }}
+    CORS_ADDITIONAL_HEADERS_LIST: '{{ .Values.global.customHttpHeaders }}'
+    COUNTER: '{{ .Values.global.counter }}'
+    LOG_LEVEL: '{{ .Values.loglevel }}'
+    OTDS_CERT_UPDATE_INTERVAL: '{{ .Values.global.otdsCertUpdateInterval }}'
+    OTDS_ORIGIN: {{ template "otds.api.url" .}}
+  {{- if .Values.useBasicLicense }}
+    BASIC_LICENSE: 'true'
+  {{- end }}
+    {{- template "metis.private.url" . }}
+    PUBLICATION_AUTHORITY: http://{{ $prefix }}-publication:{{ .Values.publication.port }}
+  {{- if .Values.publishingTarget }}
+    PUBLISHING_TARGET: {{ .Values.publishingTarget }}
+  {{- else if .Values.publishingHost }}
+    PUBLISHING_TARGET: {{ .Values.publishingProtocol }}://{{ .Values.publishingHost }}/{{ .Values.publishingPath }}
+  {{- end }}
+    PORT: '{{ .Values.service.targetPort }}'
+    REACT_APP_VIEWER_AUTHORITY: {{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-viewer{{ include "ingress.suffix" . }}
+    REACT_APP_HIGHLIGHT_AUTHORITY: {{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-highlight{{ include "ingress.suffix" . }}
+    REACT_APP_MARKUP_AUTHORITY: {{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-markup{{ include "ingress.suffix" . }}
+    REACT_APP_METIS: {{ $.Values.global.publicWebProtocol }}://{{ include "ingress.fqdn" . }}
+    {{- template "timezone" . }}
+    __VERSION__: '{{ template "version.stamp" . }}'
+

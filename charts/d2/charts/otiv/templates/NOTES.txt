@@ -1,0 +1,53 @@
+{{- $prefix := "otiv" }}
+{{- $name := "Intelligent Viewing" }}
+{{- if .Values.global.cssFqdn -}}
+{{- $prefix = "cvt" }}
+{{- $name = "Core Viewing & Transformation" }}
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+Postgresql was installed with the following values:
+Database Host: {{ .Values.postgresql.fullnameOverride }}
+Database User: {{ .Values.postgresql.postgresqlUsername }}
+Database Name: {{ .Values.postgresql.postgresqlDatabase }}
+{{- end }}
+
+{{ $name }} services are available at the following urls:
+
+
+{{- if .Values.publication.enabled }}
+
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-publication{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.asset.enabled }}
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-asset{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.viewer.enabled }}
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-viewer{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.highlight.enabled }}
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-highlight{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.markup.enabled }}
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-markup{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.otds.enabled }}
+
+OTDS is available at:
+{{ include "otds.admin.url" . }}
+{{- end }}
+
+Documentation is available at:
+https://developer.opentext.com/resources/documentation/69f18c6b-0b58-4509-8117-6bf022fd2e44/aa064dbd-8954-4d0f-8892-65fe2de124bb
+https://developer.opentext.com/learn/tutorials/a4fd99b38cdf2e797b0f3027cc15fc12
+{{- if .Values.metis.enabled }}
+
+The demo web application is available at:
+{{ $.Values.global.publicWebProtocol }}://{{ $prefix }}-metis{{ include "ingress.suffix" . }}
+{{- end }}
+{{- if .Values.otcs }}
+{{- if not .Values.otcs.skipVatUpdate }}
+
+When completed and the logs aren't required, the cs-vat-job Job/Pods can be deleted by executing:
+   kubectl -n {{ .Release.Namespace }} delete job otiv-cs-vat-job
+{{- end }}
+{{- end }}

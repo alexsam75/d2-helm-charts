@@ -1,0 +1,16 @@
+#---------------------------------------
+#PVC
+#---------------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.serviceName }}-data-pvc
+  namespace: {{ .Values.zookeeper.persistentVolume.namespace }}
+spec:
+  accessModes:
+    - {{ .Values.zookeeper.persistentVolume.pvcAccessModes }}
+  storageClassName: {{ .Values.zookeeper.persistentVolume.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.zookeeper.persistentVolume.size }}
+
